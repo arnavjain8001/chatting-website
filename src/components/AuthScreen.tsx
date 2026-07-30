@@ -16,10 +16,11 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInAnonymously,
+  signInWithPopup,
   updateProfile,
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { auth, db } from '../lib/firebase';
+import { auth, db, googleProvider } from '../lib/firebase';
 
 interface AuthScreenProps {
   onLogin: (user: { id?: string; name: string; email: string; avatar: string }) => void;
@@ -396,6 +397,51 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, isDarkMode }) =
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    setErrorMessage('');
+    try {
+      googleProvider.setCustomParameters({
+        prompt: 'select_account',
+      });
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+
+      const userData = {
+        id: user.uid,
+        name: user.displayName || 'Google User',
+        email: user.email || '',
+        username: `@${(user.email || 'googleuser').split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '')}`,
+        avatar: user.photoURL || DEMO_AVATARS[0],
+      };
+
+      if (user.uid) {
+        try {
+          await setDoc(
+            doc(db, 'users', user.uid),
+            {
+              ...userData,
+              createdAt: new Date().toISOString(),
+            },
+            { merge: true }
+          );
+        } catch (dbErr) {
+          console.warn('Firestore setDoc warning:', dbErr);
+        }
+      }
+
+      triggerToast(`Signed in as ${userData.name}`);
+      onLogin(userData);
+    } catch (err: any) {
+      console.warn('Google sign-in error:', err);
+      if (err.code !== 'auth/popup-closed-by-user') {
+        handleQuickDemoLogin('Sarah Jenkins', 'sarah.j@example.com', DEMO_AVATARS[2]);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div
       className={`min-h-screen w-full flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden transition-colors ${
@@ -712,9 +758,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, isDarkMode }) =
         <div className="grid grid-cols-2 gap-2.5 pt-1">
           <button
             type="button"
-            onClick={() =>
-              handleQuickDemoLogin('Sarah Jenkins', 'sarah.j@example.com', DEMO_AVATARS[2])
-            }
+            onClick={handleGoogleSignIn}
             className="p-2.5 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-750 text-slate-200 text-xs font-bold flex items-center justify-center gap-2 transition-colors"
           >
             <img
