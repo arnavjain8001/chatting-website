@@ -77,14 +77,20 @@ export const CallScreenModal: React.FC<CallScreenModalProps> = ({
 
   // Continuously attach media streams to video elements when refs exist
   useEffect(() => {
-    if (localVideoRef.current && mediaStreamRef.current) {
-      if (localVideoRef.current.srcObject !== mediaStreamRef.current) {
-        localVideoRef.current.srcObject = mediaStreamRef.current;
+    const hasRemoteVideoTracks = remoteStreamRef.current && remoteStreamRef.current.getVideoTracks().length > 0;
+    const effectiveMainStream = hasRemoteVideoTracks ? remoteStreamRef.current : mediaStreamRef.current;
+    const effectivePipStream = isSwappedLayout
+      ? (hasRemoteVideoTracks ? remoteStreamRef.current : mediaStreamRef.current)
+      : mediaStreamRef.current;
+
+    if (remoteVideoRef.current && effectiveMainStream) {
+      if (remoteVideoRef.current.srcObject !== effectiveMainStream) {
+        remoteVideoRef.current.srcObject = effectiveMainStream;
       }
     }
-    if (remoteVideoRef.current && remoteStreamRef.current) {
-      if (remoteVideoRef.current.srcObject !== remoteStreamRef.current) {
-        remoteVideoRef.current.srcObject = remoteStreamRef.current;
+    if (localVideoRef.current && effectivePipStream) {
+      if (localVideoRef.current.srcObject !== effectivePipStream) {
+        localVideoRef.current.srcObject = effectivePipStream;
       }
     }
   });
@@ -287,8 +293,7 @@ export const CallScreenModal: React.FC<CallScreenModalProps> = ({
             onOffer: async (offer) => {
               if (
                 role === 'receiver' &&
-                pc.signalingState !== 'closed' &&
-                pc.signalingState !== 'stable'
+                pc.signalingState === 'stable'
               ) {
                 try {
                   await pc.setRemoteDescription(new RTCSessionDescription(offer));
@@ -658,19 +663,11 @@ export const CallScreenModal: React.FC<CallScreenModalProps> = ({
                   className="w-full h-full object-cover relative z-10"
                 />
 
-                {/* Stream Connecting Overlay if P2P handshaking */}
-                {!isWebRTCConnected && (
-                  <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/70 backdrop-blur-xs p-4 text-center">
-                    <img
-                      src={contact.avatar}
-                      alt={contact.name}
-                      className="w-20 h-20 rounded-full object-cover border-2 border-pink-500 shadow-xl mb-3 animate-pulse"
-                    />
-                    <p className="text-sm font-bold text-white">{contact.nickname || contact.name}</p>
-                    <p className="text-xs text-pink-400 font-medium mt-1 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-pink-400 animate-ping" />
-                      Connecting WebRTC Video Stream...
-                    </p>
+                {/* Stream Connecting Floating Tag */}
+                {!isWebRTCConnected && !remoteStreamRef.current?.getVideoTracks().length && (
+                  <div className="absolute top-16 left-1/2 -translate-x-1/2 z-20 px-3.5 py-1.5 rounded-full bg-slate-900/80 border border-pink-500/40 text-pink-400 text-xs font-semibold backdrop-blur-md flex items-center gap-2 shadow-lg animate-pulse">
+                    <span className="w-2 h-2 rounded-full bg-pink-500 animate-ping" />
+                    <span>Connecting {contact.nickname || contact.name}'s Stream...</span>
                   </div>
                 )}
 
