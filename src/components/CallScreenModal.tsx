@@ -275,7 +275,10 @@ export const CallScreenModal: React.FC<CallScreenModalProps> = ({
         // 3. WebRTC Offer / Answer Signaling Flow
         if (callId) {
           if (role === 'caller') {
-            const offer = await pc.createOffer();
+            const offer = await pc.createOffer({
+              offerToReceiveAudio: true,
+              offerToReceiveVideo: type === 'video',
+            });
             await pc.setLocalDescription(offer);
             await setCallOffer(callId, offer);
           }
@@ -290,6 +293,24 @@ export const CallScreenModal: React.FC<CallScreenModalProps> = ({
                 try {
                   await pc.setRemoteDescription(new RTCSessionDescription(offer));
                   await flushPendingCandidates();
+
+                  // Ensure receiver local tracks are attached before creating SDP answer
+                  if (!mediaStreamRef.current && navigator.mediaDevices?.getUserMedia) {
+                    try {
+                      const stream = await navigator.mediaDevices.getUserMedia({
+                        video: type === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' } : false,
+                        audio: true,
+                      });
+                      if (isSubscribed) {
+                        mediaStreamRef.current = stream;
+                        stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+                        if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+                      }
+                    } catch (e) {
+                      console.warn('Receiver stream grab in onOffer error:', e);
+                    }
+                  }
+
                   const answer = await pc.createAnswer();
                   await pc.setLocalDescription(answer);
                   await setCallAnswer(callId, answer);
