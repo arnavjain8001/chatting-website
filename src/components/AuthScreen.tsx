@@ -434,8 +434,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, isDarkMode }) =
       onLogin(userData);
     } catch (err: any) {
       console.warn('Google sign-in error:', err);
-      if (err.code !== 'auth/popup-closed-by-user') {
-        handleQuickDemoLogin('Sarah Jenkins', 'sarah.j@example.com', DEMO_AVATARS[2]);
+      if (err.code === 'auth/popup-closed-by-user') {
+        setErrorMessage('Sign in cancelled by user.');
+      } else {
+        setErrorMessage(err.message || 'Google sign-in failed. Please try again.');
       }
     } finally {
       setIsLoading(false);
