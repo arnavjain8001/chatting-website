@@ -1,0 +1,6 @@
+{
+  "name": "ChatApp - Direct Messages",
+  "description": "Modern, responsive private messaging interface similar to Instagram Direct Messages",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

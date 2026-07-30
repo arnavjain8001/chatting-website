@@ -1,0 +1,29 @@
+{
+  "entities": {
+    "users": {
+      "title": "Users",
+      "description": "User profiles registered in the chat application",
+      "properties": {
+        "id": { "type": "string", "description": "User ID matching Firebase Auth UID" },
+        "name": { "type": "string", "description": "User display name" },
+        "email": { "type": "string", "description": "User email address" },
+        "avatar": { "type": "string", "description": "User profile avatar image URL" },
+        "username": { "type": "string", "description": "User handle/username e.g. @john" },
+        "createdAt": { "type": "string", "description": "ISO string timestamp when account was created" }
+      },
+      "required": ["id", "name", "email"]
+    },
+    "threads": {
+      "title": "Chat Threads",
+      "description": "Direct chat conversation threads",
+      "properties": {
+        "id": { "type": "string", "description": "Thread ID" },
+        "participants": { "type": "array", "items": { "type": "string" }, "description": "User IDs of participants" },
+        "lastMessage": { "type": "string", "description": "Last sent message preview" },
+        "lastMessageTime": { "type": "string", "description": "Timestamp of last message" },
+        "unreadCount": { "type": "number", "description": "Unread message count" }
+      },
+      "required": ["id", "participants"]
+    }
+  }
+}
